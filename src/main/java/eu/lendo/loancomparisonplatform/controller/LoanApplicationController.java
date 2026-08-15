@@ -6,11 +6,11 @@ import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
 import eu.lendo.loancomparisonplatform.service.LoanApplicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,19 +23,22 @@ public class LoanApplicationController {
 
     @PostMapping
     public ResponseEntity<LoanApplicationResponse> createApplication(@Valid @RequestBody LoanApplicationRequest request) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return new ResponseEntity<>(loanApplicationService.createLoanApplication(request), HttpStatus.CREATED);
     }
 
     @GetMapping("/{applicationId}")
     public ResponseEntity<LoanApplicationResponse> getApplication(@PathVariable UUID applicationId) {
-        throw new UnsupportedOperationException("not implemented yet");
+        return ResponseEntity.ok(loanApplicationService.getLoanApplication(applicationId));
     }
 
     @GetMapping
     public ResponseEntity<List<LoanApplicationResponse>> listApplications(@RequestParam(required = false) ApplicationStatus status,
                                                                           @RequestParam(required = false) Instant from,
                                                                           @RequestParam(required = false) Instant to) {
-        throw new UnsupportedOperationException("not implemented yet");
+        if (from != null && to != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("'from' must not be after 'to'");
+        }
+        return ResponseEntity.ok(loanApplicationService.listLoanApplications(status, from, to));
     }
 
 }

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.dto.request.LoanApplicationRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
+import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.service.LoanApplicationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -40,7 +40,7 @@ class LoanApplicationControllerTest {
     private LoanApplicationService loanApplicationService;
 
     @Test
-    void testCreateApplication() throws Exception {
+    void createApplication_validRequest_return201WithBody() throws Exception {
         LoanApplicationRequest request = new LoanApplicationRequest("Shyam", "Sundar", "shyam@example.com", BigDecimal.valueOf(50000), 12);
         UUID applicationId = UUID.randomUUID();
         LoanApplicationResponse response = new LoanApplicationResponse(applicationId.toString(), "Shyam", "Sundar", "shyam@example.com", BigDecimal.valueOf(50000), 12, Instant.now().plusSeconds(86400), Instant.now(), ApplicationStatus.PENDING, List.of());
@@ -65,7 +65,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testCreateApplicationWithInvalidRequest() throws Exception {
+    void createApplication_invalidRequest_return400() throws Exception {
         String requestBody = """
                 {
                     "firstName": "",
@@ -86,7 +86,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testGetApplication() throws Exception {
+    void getApplication_existingId_return200WithAllFields() throws Exception {
         UUID applicationId = UUID.randomUUID();
         LoanApplicationResponse response = new LoanApplicationResponse(applicationId.toString(), "Shyam", "Sundar",
                 "shyam@example.com", BigDecimal.valueOf(50000), 12, Instant.now().plusSeconds(86400), Instant.now(), ApplicationStatus.PENDING, List.of());
@@ -110,7 +110,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testGetApplicationWithInvalidApplicationId() throws Exception {
+    void getApplication_invalidRequest_return400() throws Exception {
         mockMvc.perform(get("/api/v1/application/{applicationId}", "invalid-uuid"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Invalid value for parameter 'applicationId'"));;
@@ -119,11 +119,11 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testGetApplicationWhenLoanApplicationNotFound() throws Exception {
+    void getApplication_noloanApplicationFound_return404() throws Exception {
         UUID applicationId = UUID.randomUUID();
 
         when(loanApplicationService.getLoanApplication(applicationId))
-                .thenThrow(new NoSuchElementException("Loan application not found: " + applicationId));
+                .thenThrow(new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
 
         mockMvc.perform(get("/api/v1/application/{applicationId}", applicationId))
                 .andExpect(status().isNotFound())
@@ -137,7 +137,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplications() throws Exception {
+    void listApplication_noFilter_return200() throws Exception {
         when(loanApplicationService.listLoanApplications(any(), any(), any())).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/application"))
@@ -147,7 +147,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplicationsWithStatus() throws Exception {
+    void listApplication_statusFilter_return200() throws Exception {
         when(loanApplicationService.listLoanApplications(ApplicationStatus.PENDING, null, null)).thenReturn(List.of());
 
         mockMvc.perform(get("/api/v1/application")
@@ -158,7 +158,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplicationsWithDateRange() throws Exception {
+    void listApplication_dateFilter_return200() throws Exception {
         Instant from = Instant.parse("2026-08-01T00:00:00Z");
         Instant to = Instant.parse("2026-08-15T00:00:00Z");
 
@@ -173,7 +173,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplicationsWithInvalidStatus() throws Exception {
+    void listApplication_invalidStatus_return400() throws Exception {
         mockMvc.perform(get("/api/v1/application")
                         .param("status", "INVALID_STATUS"))
                 .andExpect(status().isBadRequest())
@@ -184,7 +184,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplicationsWithInvalidFromDate() throws Exception {
+    void listApplication_invalidFromDate_return400() throws Exception {
         mockMvc.perform(get("/api/v1/application")
                         .param("from", "invalid-date"))
                 .andExpect(status().isBadRequest())
@@ -194,7 +194,7 @@ class LoanApplicationControllerTest {
     }
 
     @Test
-    void testListApplicationsWhenFromIsAfterTo() throws Exception {
+    void listApplication_incorrectRequest_return400() throws Exception {
         Instant from = Instant.parse("2026-08-20T00:00:00Z");
         Instant to = Instant.parse("2026-08-10T00:00:00Z");
 
