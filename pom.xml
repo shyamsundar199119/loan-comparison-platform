@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.0</version>
+		<version>3.5.16</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>eu.lendo</groupId>
@@ -16,6 +16,7 @@
 		<java.version>21</java.version>
 	</properties>
 	<dependencies>
+		<!-- TODO: Revisit reported Jackson Databind vulnerabilities after the next compatible Spring Boot upgrade. -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
@@ -35,6 +36,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>true</scope>
+		</dependency>
+		<!-- TODO: Revisit reported Common lang vulnerabilities after the next compatible Spring Boot upgrade. -->
+		<dependency>
+			<groupId>io.rest-assured</groupId>
+			<artifactId>rest-assured</artifactId>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 
