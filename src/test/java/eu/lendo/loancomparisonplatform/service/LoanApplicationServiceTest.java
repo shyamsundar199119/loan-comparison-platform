@@ -2,10 +2,12 @@ package eu.lendo.loancomparisonplatform.service;
 
 import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.domain.LoanApplication;
+import eu.lendo.loancomparisonplatform.domain.LoanOffer;
 import eu.lendo.loancomparisonplatform.dto.request.LoanApplicationRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
+import eu.lendo.loancomparisonplatform.repository.LoanOfferRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +32,9 @@ class LoanApplicationServiceTest {
 
     @Mock
     private LoanApplicationRepository loanApplicationRepository;
+
+    @Mock
+    private LoanOfferRepository loanOfferRepository;
 
     @InjectMocks
     private LoanApplicationService loanApplicationService;
@@ -77,13 +82,26 @@ class LoanApplicationServiceTest {
                 .status(ApplicationStatus.PENDING)
                 .createdAt(Instant.now()).build();
 
+        LoanOffer loanOffer=LoanOffer.builder()
+                .id(UUID.randomUUID())
+                .lenderName("Bank A")
+                .loanApplication(application)
+                .totalRepaymentAmount(BigDecimal.valueOf(300_000))
+                .interestRate(BigDecimal.valueOf(5.5))
+                .createdAt(Instant.now())
+                .build();
+
+        application.setLoanOffers(List.of(loanOffer));
+
         when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanOfferRepository.findByLoanApplicationId(applicationId)).thenReturn(List.of(loanOffer));
 
         LoanApplicationResponse response = loanApplicationService.getLoanApplication(applicationId);
 
         assertThat(response).isNotNull();
         assertThat(response.applicationId()).isEqualTo(applicationId);
         assertThat(response.status()).isEqualTo(ApplicationStatus.PENDING);
+        assertThat(response.loanOffers()).hasSize(1);
 
         verify(loanApplicationRepository).findById(applicationId);
     }
