@@ -1,11 +1,14 @@
 package eu.lendo.loancomparisonplatform.service;
 
 import eu.lendo.loancomparisonplatform.domain.LoanApplication;
+import eu.lendo.loancomparisonplatform.domain.LoanOffer;
 import eu.lendo.loancomparisonplatform.dto.request.LoanApplicationRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
 import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
+import eu.lendo.loancomparisonplatform.dto.response.LoanOfferResponse;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
+import eu.lendo.loancomparisonplatform.repository.LoanOfferRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,6 +23,7 @@ import java.util.UUID;
 public class LoanApplicationService {
 
     private final LoanApplicationRepository loanApplicationRepository;
+    private final LoanOfferRepository loanOfferRepository;
 
     @Value("${loan.application.expiry.seconds:86400}")
     private long loanApplicationExpirySeconds;
@@ -60,6 +64,18 @@ public class LoanApplicationService {
         LoanApplication loanApplication = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
 
+        List<LoanOffer> loanOfferList = loanOfferRepository.findByLoanApplicationId(applicationId);
+        List<LoanOfferResponse> loanOfferResponseList = loanOfferList.stream().map(loanOffer -> new LoanOfferResponse(
+                loanOffer.getId(),
+                loanOffer.getLoanApplication().getId(),
+                loanOffer.getLenderName(),
+                loanOffer.getInterestRate(),
+                loanOffer.getMonthlyPayment(),
+                loanOffer.getTotalRepaymentAmount(),
+                loanOffer.getCreatedAt(),
+                loanOffer.getStatus()
+        )).toList();
+
         return new LoanApplicationResponse(
                 loanApplication.getId(),
                 loanApplication.getApplicantFirstName(),
@@ -70,7 +86,7 @@ public class LoanApplicationService {
                 loanApplication.getExpiresAt(),
                 loanApplication.getCreatedAt(),
                 loanApplication.getStatus(),
-                List.of() // No loan offers logic initially - to be implemented
+                loanOfferResponseList
         );
     }
 
@@ -89,7 +105,7 @@ public class LoanApplicationService {
                         loanApplication.getExpiresAt(),
                         loanApplication.getCreatedAt(),
                         loanApplication.getStatus(),
-                        List.of() // No loan offers logic initially
+                        List.of() // No loan offers logic initially as not mentioned in doc
                 ))
                 .toList();
     }
