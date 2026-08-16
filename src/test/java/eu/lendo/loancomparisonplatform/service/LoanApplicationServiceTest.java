@@ -43,7 +43,11 @@ class LoanApplicationServiceTest {
 
     @Test
     void createLoanApplication_withValidRequest_returnsCreatedApplication() {
-        when(loanApplicationRepository.save(any(LoanApplication.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(loanApplicationRepository.save(any(LoanApplication.class))).thenAnswer(invocation -> {
+            LoanApplication savedApplication = invocation.getArgument(0);
+            savedApplication.setId(UUID.randomUUID()); // Simulate ID generation at the repository level
+            return savedApplication;
+        });
         LoanApplicationResponse response = loanApplicationService.createLoanApplication(request);
 
         assertThat(response).isNotNull();

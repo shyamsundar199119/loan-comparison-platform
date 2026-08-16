@@ -58,7 +58,7 @@ class LoanApplicationApiTest extends BaseApiTest {
                 .body("applicantFirstName", equalTo("Shyam Sundar"))
                 .body("applicantLastName", equalTo("Durai Pandian"))
                 .body("applicantEmail", equalTo("shyam@example.com"))
-                .body("loanAmount", comparesEqualTo(50000))
+                .body("loanAmount", comparesEqualTo(50000.0F))
                 .body("loanTermMonths", equalTo(12))
                 .body("status", equalTo("PENDING"))
                 .body("createdAt", notNullValue())

@@ -7,12 +7,13 @@ import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +21,14 @@ public class LoanApplicationService {
 
     private final LoanApplicationRepository loanApplicationRepository;
 
+    @Value("${loan.application.expiry.seconds:86400}")
+    private long loanApplicationExpirySeconds;
+
+    @Transactional
     public LoanApplicationResponse createLoanApplication(LoanApplicationRequest request) {
         Instant now = Instant.now();
 
         LoanApplication loanApplication = LoanApplication.builder()
-                .id(UUID.randomUUID())
                 .applicantFirstName(request.firstName())
                 .applicantLastName(request.lastName())
                 .applicantEmail(request.emailId())
@@ -32,7 +36,7 @@ public class LoanApplicationService {
                 .requestLoanTermMonths(request.loanTermMonths())
                 .status(ApplicationStatus.PENDING)
                 .createdAt(now)
-                .expiresAt(now.plusSeconds(86400)) // Example: 1 day processing time
+                .expiresAt(now.plusSeconds(loanApplicationExpirySeconds)) 
                 .build();
 
         loanApplicationRepository.save(loanApplication);
@@ -51,6 +55,7 @@ public class LoanApplicationService {
         );
     }
 
+    @Transactional(readOnly = true)
     public LoanApplicationResponse getLoanApplication(UUID applicationId) {
         LoanApplication loanApplication = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
@@ -69,6 +74,7 @@ public class LoanApplicationService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<LoanApplicationResponse> listLoanApplications(ApplicationStatus status, Instant from, Instant to) {
         List<LoanApplication> loanApplications = loanApplicationRepository.findAllByFilters(status, from, to);
 
@@ -85,6 +91,6 @@ public class LoanApplicationService {
                         loanApplication.getStatus(),
                         List.of() // No loan offers logic initially
                 ))
-                .collect(Collectors.toList());
+                .toList();
     }
 }
