@@ -5,9 +5,10 @@ import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 public record LoanApplicationResponse(
-        String applicationId,
+        UUID applicationId,
         String applicantFirstName,
         String applicantLastName,
         String applicantEmail,

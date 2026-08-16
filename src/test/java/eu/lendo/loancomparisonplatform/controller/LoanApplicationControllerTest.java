@@ -43,7 +43,7 @@ class LoanApplicationControllerTest {
     void createApplication_validRequest_return201WithBody() throws Exception {
         LoanApplicationRequest request = new LoanApplicationRequest("Shyam", "Sundar", "shyam@example.com", BigDecimal.valueOf(50000), 12);
         UUID applicationId = UUID.randomUUID();
-        LoanApplicationResponse response = new LoanApplicationResponse(applicationId.toString(), "Shyam", "Sundar", "shyam@example.com", BigDecimal.valueOf(50000), 12, Instant.now().plusSeconds(86400), Instant.now(), ApplicationStatus.PENDING, List.of());
+        LoanApplicationResponse response = new LoanApplicationResponse(applicationId, "Shyam", "Sundar", "shyam@example.com", BigDecimal.valueOf(50000), 12, Instant.now().plusSeconds(86400), Instant.now(), ApplicationStatus.PENDING, List.of());
 
         when(loanApplicationService.createLoanApplication(any(LoanApplicationRequest.class))).thenReturn(response);
 
@@ -88,7 +88,7 @@ class LoanApplicationControllerTest {
     @Test
     void getApplication_existingId_return200WithAllFields() throws Exception {
         UUID applicationId = UUID.randomUUID();
-        LoanApplicationResponse response = new LoanApplicationResponse(applicationId.toString(), "Shyam", "Sundar",
+        LoanApplicationResponse response = new LoanApplicationResponse(applicationId, "Shyam", "Sundar",
                 "shyam@example.com", BigDecimal.valueOf(50000), 12, Instant.now().plusSeconds(86400), Instant.now(), ApplicationStatus.PENDING, List.of());
 
         when(loanApplicationService.getLoanApplication(applicationId)).thenReturn(response);
