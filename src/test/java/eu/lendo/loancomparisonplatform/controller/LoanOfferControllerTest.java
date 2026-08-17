@@ -1,17 +1,19 @@
 package eu.lendo.loancomparisonplatform.controller;
 
 import eu.lendo.loancomparisonplatform.domain.OfferStatus;
+import eu.lendo.loancomparisonplatform.dto.request.LoanOfferRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanOfferResponse;
-import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
-import eu.lendo.loancomparisonplatform.exception.LoanApplicationStateException;
-import eu.lendo.loancomparisonplatform.exception.LoanOfferNotFoundException;
-import eu.lendo.loancomparisonplatform.exception.LoanOfferStateException;
+import eu.lendo.loancomparisonplatform.exception.*;
 import eu.lendo.loancomparisonplatform.service.LoanOfferService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import org.springframework.test.web.servlet.MockMvc;
@@ -135,6 +137,128 @@ class LoanOfferControllerTest {
         mockMvc.perform(post("/api/v1/application/{applicationId}/offers/{offerId}/accept", applicationId, "invalid-uuid"))
                 .andExpect(status().isBadRequest());
         verifyNoInteractions(loanOfferService);
+    }
+
+    @Test
+    void saveLoanOffer_whenValidRequest_returnsCreated() throws Exception {
+
+        LoanOfferResponse response = validLoanOfferResponse();
+
+        when(loanOfferService.createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        )).thenReturn(response);
+
+        mockMvc.perform(
+                        post("/api/v1/application/{applicationId}/offers", applicationId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "lenderName": "Test Lender",
+                                            "annualInterestRate": 5.5,
+                                            "monthlyPaymentAmount": 2500,
+                                            "totalRepaymentAmount": 300000
+                                        }
+                                        """)
+                )
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.offerId").value(offerId.toString()))
+                .andExpect(jsonPath("$.loanApplicationId").value(applicationId.toString()))
+                .andExpect(jsonPath("$.lenderName").value("Test Lender"))
+                .andExpect(jsonPath("$.annualInterestRate").value(5.5))
+                .andExpect(jsonPath("$.monthlyPayment").value(2500))
+                .andExpect(jsonPath("$.totalRepayment").value(300000))
+                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.createdAt").exists());
+
+        verify(loanOfferService).createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        );
+    }
+
+    @Test
+    void saveLoanOffer_whenApplicationDoesNotExist_returnsNotFound()
+            throws Exception {
+
+        when(loanOfferService.createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        )).thenThrow(new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
+
+        mockMvc.perform(post("/api/v1/application/{applicationId}/offers", applicationId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validLoanOfferJson())
+                ).andExpect(status().isNotFound());
+
+        verify(loanOfferService).createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        );
+    }
+
+    @Test
+    void saveLoanOffer_whenApplicationIsNotPending_returnsConflict()
+            throws Exception {
+
+        when(loanOfferService.createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        )).thenThrow(new LoanApplicationStateException("Loan application must be in PENDING status to submit an offer"));
+
+        mockMvc.perform(post("/api/v1/application/{applicationId}/offers", applicationId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validLoanOfferJson()))
+                .andExpect(status().isUnprocessableEntity());
+
+        verify(loanOfferService).createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        );
+    }
+
+    @Test
+    void saveLoanOffer_whenLenderAlreadySubmittedOffer_returnsConflict()
+            throws Exception {
+
+        when(loanOfferService.createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        )).thenThrow(new DuplicateLoanOfferException("Lender 'Test Lender' has already submitted an offer"));
+
+        mockMvc.perform(post("/api/v1/application/{applicationId}/offers", applicationId)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(validLoanOfferJson()))
+                .andExpect(status().isConflict());
+
+        verify(loanOfferService).createLoanOffer(
+                eq(applicationId),
+                any(LoanOfferRequest.class)
+        );
+    }
+
+    private LoanOfferResponse validLoanOfferResponse() {
+        return new LoanOfferResponse(
+                offerId,
+                applicationId,
+                "Test Lender",
+                BigDecimal.valueOf(5.5),
+                BigDecimal.valueOf(2500),
+                BigDecimal.valueOf(300000),
+                Instant.parse("2026-08-18T10:00:00Z"),
+                OfferStatus.PENDING
+        );
+    }
+
+    private String validLoanOfferJson() {
+        return """
+            {
+                "lenderName": "Test Lender",
+                "annualInterestRate": 5.5,
+                "monthlyPaymentAmount": 2500,
+                "totalRepaymentAmount": 300000
+            }
+            """;
     }
 
 }
