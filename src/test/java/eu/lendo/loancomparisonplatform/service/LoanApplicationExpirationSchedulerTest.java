@@ -34,6 +34,8 @@ class LoanApplicationExpirationSchedulerTest {
     @BeforeEach
     void setUp() {
         now = Instant.parse("2026-08-17T12:00:00Z");
+        Clock fixedClock = Clock.fixed(now, ZoneOffset.UTC);
+        expirationScheduler = new LoanApplicationExpirationScheduler(loanApplicationRepository, fixedClock);
     }
 
     @Test

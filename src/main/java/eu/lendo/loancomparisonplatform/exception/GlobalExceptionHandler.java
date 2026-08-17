@@ -39,14 +39,14 @@ public class GlobalExceptionHandler {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
-                HttpStatus.CONFLICT.value(),
+                HttpStatus.BAD_REQUEST.value(),
                 "CONFLICT",
                 message,
                 request.getRequestURI(),
                 null
         );
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return ResponseEntity.badRequest().body(errorResponse);
     }
 
     @ExceptionHandler(LoanApplicationStateException.class)
