@@ -4,7 +4,9 @@ import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.domain.LoanApplication;
 import eu.lendo.loancomparisonplatform.domain.LoanOffer;
 import eu.lendo.loancomparisonplatform.domain.OfferStatus;
+import eu.lendo.loancomparisonplatform.dto.request.LoanOfferRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanOfferResponse;
+import eu.lendo.loancomparisonplatform.exception.DuplicateLoanOfferException;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationStateException;
 import eu.lendo.loancomparisonplatform.exception.LoanOfferNotFoundException;
@@ -141,6 +143,92 @@ class LoanOfferServiceTest {
         assertThat(offerC.getStatus()).isEqualTo(OfferStatus.REJECTED);
     }
 
+    @Test
+    void createLoanOffer_whenApplicationIsPending_createsOffer() {
+
+        LoanApplication application = createApplication(applicationId, ApplicationStatus.PENDING);
+        LoanOfferRequest request = validLoanOfferRequest();
+
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanOfferRepository.existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName())).thenReturn(false);
+
+        LoanOffer savedOffer = createOffer(application, request);
+
+        when(loanOfferRepository.save(any(LoanOffer.class))).thenReturn(savedOffer);
+
+        LoanOfferResponse response = loanOfferService.createLoanOffer(applicationId, request);
+
+        assertThat(response).isNotNull();
+        assertThat(response.lenderName()).isEqualTo("Test Lender");
+        assertThat(response.annualInterestRate()).isEqualByComparingTo("5.5");
+        assertThat(response.monthlyPayment()).isEqualByComparingTo("2500");
+        assertThat(response.totalRepayment()).isEqualByComparingTo("300000");
+        assertThat(response.status()).isEqualTo(OfferStatus.PENDING);
+
+        verify(loanApplicationRepository).findById(applicationId);
+        verify(loanOfferRepository).existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName());
+        verify(loanOfferRepository)
+                .save(any(LoanOffer.class));
+    }
+    @Test
+    void createLoanOffer_whenApplicationDoesNotExist_throwsApplicationNotFoundException() {
+        LoanOfferRequest request = validLoanOfferRequest();
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> loanOfferService.createLoanOffer(applicationId, request))
+                .isInstanceOf(LoanApplicationNotFoundException.class);
+        verify(loanApplicationRepository).findById(applicationId);
+        verifyNoInteractions(loanOfferRepository);
+    }
+
+    @Test
+    void createLoanOffer_whenApplicationIsAccepted_throwsLoanApplicationStateException() {
+        LoanApplication application = createApplication(applicationId, ApplicationStatus.ACCEPTED);
+        LoanOfferRequest request = validLoanOfferRequest();
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        assertThatThrownBy(() -> loanOfferService.createLoanOffer(applicationId, request)).isInstanceOf(LoanApplicationStateException.class);
+        verify(loanApplicationRepository).findById(applicationId);
+        verifyNoInteractions(loanOfferRepository);
+    }
+
+    @Test
+    void createLoanOffer_whenApplicationIsExpired_throwsLoanApplicationStateException() {
+        LoanApplication application = createApplication(applicationId, ApplicationStatus.EXPIRED);
+        LoanOfferRequest request = validLoanOfferRequest();
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        assertThatThrownBy(() -> loanOfferService.createLoanOffer(applicationId, request)).isInstanceOf(LoanApplicationStateException.class);
+        verify(loanApplicationRepository).findById(applicationId);
+        verifyNoInteractions(loanOfferRepository);
+    }
+
+    @Test
+    void createLoanOffer_whenLenderAlreadyHasOffer_throwsDuplicateLoanOfferException() {
+        LoanApplication application = createApplication(applicationId, ApplicationStatus.PENDING);
+        LoanOfferRequest request = validLoanOfferRequest();
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanOfferRepository.existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName())).thenReturn(true);
+        assertThatThrownBy(() -> loanOfferService.createLoanOffer(applicationId, request)).isInstanceOf(DuplicateLoanOfferException.class);
+        verify(loanApplicationRepository).findById(applicationId);
+        verify(loanOfferRepository).existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName());
+        verify(loanOfferRepository, never()).save(any(LoanOffer.class));
+    }
+
+    @Test
+    void createLoanOffer_whenAnotherLenderHasOffer_createsNewOffer() {
+        LoanApplication application = createApplication(applicationId, ApplicationStatus.PENDING);
+        LoanOfferRequest request = new LoanOfferRequest("Another Lender", BigDecimal.valueOf(6.0), BigDecimal.valueOf(2600), BigDecimal.valueOf(312000));
+        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanOfferRepository.existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName())).thenReturn(false);
+
+        LoanOffer savedOffer = createOffer(application, request);
+        when(loanOfferRepository.save(any(LoanOffer.class))).thenReturn(savedOffer);
+
+        LoanOfferResponse response = loanOfferService.createLoanOffer(applicationId, request);
+        assertThat(response).isNotNull();
+        assertThat(response.lenderName()).isEqualTo("Another Lender");
+        assertThat(response.status()).isEqualTo(OfferStatus.PENDING);
+        verify(loanOfferRepository).save(any(LoanOffer.class));
+    }
+
     private LoanApplication createApplication(UUID applicationId, ApplicationStatus status) {
         return LoanApplication.builder().id(applicationId)
                 .applicantFirstName("Shyam Sundar")
@@ -159,6 +247,26 @@ class LoanOfferServiceTest {
                 .interestRate(BigDecimal.valueOf(5.5)) // Example interest rate
                 .status(status) // Use the provided status
                 .createdAt(Instant.now()) // Set the creation timestamp
+                .build();
+    }
+
+    private LoanOfferRequest validLoanOfferRequest() {
+        return new LoanOfferRequest(
+                "Test Lender",
+                BigDecimal.valueOf(5.5),
+                BigDecimal.valueOf(2500),
+                BigDecimal.valueOf(300000)
+        );
+    }
+    private LoanOffer createOffer(LoanApplication application, LoanOfferRequest request) {
+        return LoanOffer.builder()
+                .id(UUID.randomUUID())
+                .loanApplication(application)
+                .lenderName(request.lenderName())
+                .interestRate(request.annualInterestRate())
+                .monthlyPayment(request.monthlyPaymentAmount())
+                .totalRepaymentAmount(request.totalRepaymentAmount())
+                .status(OfferStatus.PENDING)
                 .build();
     }
 }

@@ -8,4 +8,5 @@ import java.util.UUID;
 
 public interface LoanOfferRepository extends JpaRepository<LoanOffer, UUID> {
     List<LoanOffer> findByLoanApplicationId(UUID loanApplicationId);
+    Boolean existsByLoanApplicationIdAndLenderName(UUID applicationId, String lenderName);
 }

@@ -1,5 +1,6 @@
 package eu.lendo.loancomparisonplatform.service;
 
+import eu.lendo.loancomparisonplatform.dto.request.LoanOfferRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanOfferResponse;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundException;
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationStateException;
@@ -23,6 +24,10 @@ public class LoanOfferService {
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanOfferRepository loanOfferRepository;
+
+    public LoanOfferResponse createLoanOffer(UUID applicationId, LoanOfferRequest request){
+        throw new UnsupportedOperationException("not implemented yet");
+    }
 
     @Transactional
     public LoanOfferResponse acceptLoanOffer(UUID applicationId, UUID offerId) {
