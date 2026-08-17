@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
                 null
         );
 
-        return ResponseEntity.badRequest().body(errorResponse);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
     @ExceptionHandler(LoanApplicationStateException.class)
@@ -90,8 +90,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
 
+    @ExceptionHandler(DuplicateLoanOfferException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateLoanOfferException(DuplicateLoanOfferException ex, HttpServletRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                Instant.now(),
+                HttpStatus.CONFLICT.value(),
+                "DUPLICATE_LOAN_OFFER",
+                ex.getMessage(),
+                request.getRequestURI(),
+                null
+        );
+
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+    }
+
     @ExceptionHandler(LoanOfferNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleLoanApplicationNotFound(LoanOfferNotFoundException ex, HttpServletRequest request) {
+    public ResponseEntity<ErrorResponse> handleLoanOfferNotFound(LoanOfferNotFoundException ex, HttpServletRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),

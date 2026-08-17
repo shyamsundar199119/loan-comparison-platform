@@ -6,6 +6,7 @@ import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundExceptio
 import eu.lendo.loancomparisonplatform.exception.LoanApplicationStateException;
 import eu.lendo.loancomparisonplatform.exception.LoanOfferNotFoundException;
 import eu.lendo.loancomparisonplatform.exception.LoanOfferStateException;
+import eu.lendo.loancomparisonplatform.exception.DuplicateLoanOfferException;
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
 import eu.lendo.loancomparisonplatform.repository.LoanOfferRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,7 @@ import eu.lendo.loancomparisonplatform.domain.LoanOffer;
 import eu.lendo.loancomparisonplatform.domain.OfferStatus;
 import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -25,8 +27,28 @@ public class LoanOfferService {
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanOfferRepository loanOfferRepository;
 
-    public LoanOfferResponse createLoanOffer(UUID applicationId, LoanOfferRequest request){
-        throw new UnsupportedOperationException("not implemented yet");
+    @Transactional
+    public LoanOfferResponse createLoanOffer(UUID applicationId, LoanOfferRequest request) {
+
+        LoanApplication application = loanApplicationRepository.findById(applicationId).orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
+        if (application.getStatus() != ApplicationStatus.PENDING) {
+            throw new LoanApplicationStateException("Loan application must be in PENDING status to submit an offer");
+        }
+
+        boolean lenderAlreadySubmitted = loanOfferRepository.existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName());
+        if (lenderAlreadySubmitted) {
+            throw new DuplicateLoanOfferException("Lender '%s' has already submitted an offer for this application".formatted(request.lenderName()));
+        }
+        LoanOffer offer = LoanOffer.builder()
+                .loanApplication(application)
+                .lenderName(request.lenderName())
+                .interestRate(request.annualInterestRate())
+                .monthlyPayment(request.monthlyPaymentAmount())
+                .totalRepaymentAmount(request.totalRepaymentAmount())
+                .status(OfferStatus.PENDING)
+                .createdAt(Instant.now()).build();
+        LoanOffer savedOffer = loanOfferRepository.save(offer);
+        return mapToResponse(savedOffer);
     }
 
     @Transactional

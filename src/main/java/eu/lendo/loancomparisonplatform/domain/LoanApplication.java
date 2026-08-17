@@ -54,7 +54,7 @@ public class LoanApplication {
 
     // Maps the relationship to your LoanOffer entity
     // "loanApplication" must match the variable name inside your LoanOffer class
-    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
     @Builder.Default
     private List<LoanOffer> loanOffers = new ArrayList<>();
 
