@@ -3,7 +3,9 @@ package eu.lendo.loancomparisonplatform.controller;
 import eu.lendo.loancomparisonplatform.dto.request.LoanOfferRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanOfferResponse;
 import eu.lendo.loancomparisonplatform.service.LoanOfferService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,7 +23,8 @@ public class LoanOfferController {
         return ResponseEntity.ok(loanOfferService.acceptLoanOffer(applicationId, offerId));
     }
 
-    public ResponseEntity<LoanOfferResponse> saveLoanOffer(UUID applicationId, LoanOfferRequest request) {
-        throw new UnsupportedOperationException("This endpoint is not implemented yet.");
+    @PostMapping
+    public ResponseEntity<LoanOfferResponse> saveLoanOffer(@PathVariable UUID applicationId, @Valid @RequestBody LoanOfferRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(loanOfferService.createLoanOffer(applicationId, request));
     }
 }
