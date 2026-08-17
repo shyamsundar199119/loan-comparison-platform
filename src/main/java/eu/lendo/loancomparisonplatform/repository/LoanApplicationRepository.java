@@ -19,4 +19,6 @@ public interface LoanApplicationRepository extends JpaRepository<LoanApplication
     List<LoanApplication> findAllByFilters(@Param("status") ApplicationStatus status,
                                            @Param("from") Instant from,
                                            @Param("to") Instant to);
+
+    List<LoanApplication> findAllByStatusAndExpiresAtBefore(ApplicationStatus status, Instant now);
 }
