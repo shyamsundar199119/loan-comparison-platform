@@ -21,7 +21,7 @@ public class LoanOffer {
     private UUID id;
 
     // Defines the foreign key relationship to the LoanApplication entity
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "loan_application_id", nullable = false)
     private LoanApplication loanApplication;
 

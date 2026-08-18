@@ -54,7 +54,7 @@ public class LoanOfferService {
     @Transactional
     public LoanOfferResponse acceptLoanOffer(UUID applicationId, UUID offerId) {
 
-        LoanApplication application = loanApplicationRepository.findById(applicationId)
+        LoanApplication application = loanApplicationRepository.findByIdWithLock(applicationId)
                         .orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
 
         LoanOffer offer = loanOfferRepository.findById(offerId).orElseThrow(() -> new LoanOfferNotFoundException("Loan offer not found: " +offerId));

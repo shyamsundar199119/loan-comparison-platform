@@ -1,7 +1,8 @@
 package eu.lendo.loancomparisonplatform.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
@@ -54,7 +55,7 @@ public class LoanApplication {
 
     // Maps the relationship to your LoanOffer entity
     // "loanApplication" must match the variable name inside your LoanOffer class
-    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, orphanRemoval = true,fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "loanApplication", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<LoanOffer> loanOffers = new ArrayList<>();
 

@@ -57,7 +57,7 @@ class LoanOfferServiceTest {
         LoanApplication application = createApplication(applicationId, ApplicationStatus.PENDING);
         LoanOffer offer = createOffer(offerId, application, OfferStatus.PENDING);
 
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.of(application));
         when(loanOfferRepository.findById(offerId)).thenReturn(Optional.of(offer));
 
         LoanOfferResponse response = loanOfferService.acceptLoanOffer(applicationId, offerId);
@@ -68,16 +68,16 @@ class LoanOfferServiceTest {
         assertThat(application.getStatus()).isEqualTo(ApplicationStatus.ACCEPTED);
         assertThat(offer.getStatus()).isEqualTo(OfferStatus.ACCEPTED);
 
-        verify(loanApplicationRepository).findById(applicationId);
+        verify(loanApplicationRepository).findByIdWithLock(applicationId);
         verify(loanOfferRepository).findById(offerId);
     }
 
     @Test
     void acceptLoanOffer_whenApplicationDoesNotExist_throwsApplicationNotFoundException() {
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.empty());
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.empty());
         assertThatThrownBy(() -> loanOfferService.acceptLoanOffer(applicationId, offerId)).isInstanceOf(LoanApplicationNotFoundException.class);
 
-        verify(loanApplicationRepository).findById(applicationId);
+        verify(loanApplicationRepository).findByIdWithLock(applicationId);
         verifyNoInteractions(loanOfferRepository);
     }
 
@@ -85,12 +85,12 @@ class LoanOfferServiceTest {
     void acceptLoanOffer_whenOfferDoesNotExist_throwsLoanOfferNotFoundException() {
         LoanApplication application = createApplication(applicationId, ApplicationStatus.PENDING);
 
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.of(application));
         when(loanOfferRepository.findById(offerId)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> loanOfferService.acceptLoanOffer(applicationId, offerId)).isInstanceOf(LoanOfferNotFoundException.class);
 
-        verify(loanApplicationRepository).findById(applicationId);
+        verify(loanApplicationRepository).findByIdWithLock(applicationId);
         verify(loanOfferRepository).findById(offerId);
     }
 
@@ -99,7 +99,7 @@ class LoanOfferServiceTest {
         LoanApplication application = createApplication(applicationId, ApplicationStatus.ACCEPTED);
         LoanOffer offer = createOffer(offerId, application, OfferStatus.PENDING);
 
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.of(application));
         when(loanOfferRepository.findById(offerId)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> loanOfferService.acceptLoanOffer(applicationId, offerId)).isInstanceOf(LoanApplicationStateException.class);
@@ -112,7 +112,7 @@ class LoanOfferServiceTest {
         LoanApplication application = createApplication(applicationId, ApplicationStatus.EXPIRED);
         LoanOffer offer = createOffer(offerId, application, OfferStatus.PENDING);
 
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.of(application));
         when(loanOfferRepository.findById(offerId)).thenReturn(Optional.of(offer));
 
         assertThatThrownBy(() -> loanOfferService.acceptLoanOffer(applicationId, offerId)).isInstanceOf(LoanApplicationStateException.class);
@@ -132,7 +132,7 @@ class LoanOfferServiceTest {
         LoanOffer offerC = createOffer(offerCId, application, OfferStatus.PENDING);
         application.setLoanOffers(new ArrayList<>(List.of(offerA, offerB, offerC)));
 
-        when(loanApplicationRepository.findById(applicationId)).thenReturn(Optional.of(application));
+        when(loanApplicationRepository.findByIdWithLock(applicationId)).thenReturn(Optional.of(application));
         when(loanOfferRepository.findById(offerBId)).thenReturn(Optional.of(offerB));
         LoanOfferResponse response = loanOfferService.acceptLoanOffer(applicationId, offerBId);
         assertThat(response.offerId()).isEqualTo(offerBId);

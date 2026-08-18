@@ -90,7 +90,7 @@ public class LoanApplicationService {
         );
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<LoanApplicationResponse> listLoanApplications(ApplicationStatus status, Instant from, Instant to) {
         List<LoanApplication> loanApplications = loanApplicationRepository.findAllByFilters(status, from, to);
 
