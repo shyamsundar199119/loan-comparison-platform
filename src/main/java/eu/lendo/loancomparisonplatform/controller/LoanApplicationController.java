@@ -3,8 +3,8 @@ package eu.lendo.loancomparisonplatform.controller;
 import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.dto.request.LoanApplicationRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
+import eu.lendo.loancomparisonplatform.exception.InvalidDateRangeException;
 import eu.lendo.loancomparisonplatform.service.LoanApplicationService;
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -37,7 +37,7 @@ public class LoanApplicationController implements LoanApplicationApi{
                                                                           @RequestParam(required = false) Instant from,
                                                                           @RequestParam(required = false) Instant to) {
         if (from != null && to != null && from.isAfter(to)) {
-            throw new IllegalArgumentException("'from' must not be after 'to'");
+            throw new InvalidDateRangeException("'from' must not be after 'to'");
         }
         return ResponseEntity.ok(loanApplicationService.listLoanApplications(status, from, to));
     }
