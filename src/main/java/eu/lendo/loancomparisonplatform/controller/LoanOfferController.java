@@ -14,7 +14,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/application/{applicationId}/offers")
 @RequiredArgsConstructor
-public class LoanOfferController {
+public class LoanOfferController implements LoanOfferApi {
 
     private final LoanOfferService loanOfferService;
 

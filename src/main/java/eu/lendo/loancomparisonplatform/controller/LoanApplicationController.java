@@ -4,6 +4,7 @@ import eu.lendo.loancomparisonplatform.domain.ApplicationStatus;
 import eu.lendo.loancomparisonplatform.dto.request.LoanApplicationRequest;
 import eu.lendo.loancomparisonplatform.dto.response.LoanApplicationResponse;
 import eu.lendo.loancomparisonplatform.service.LoanApplicationService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,7 @@ import java.util.UUID;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/application")
-public class LoanApplicationController {
+public class LoanApplicationController implements LoanApplicationApi{
 
     private final LoanApplicationService loanApplicationService;
 
