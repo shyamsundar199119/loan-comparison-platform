@@ -4,10 +4,12 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.*;
 
 class LoanApplicationApiTest extends BaseApiTest {
@@ -92,6 +94,8 @@ class LoanApplicationApiTest extends BaseApiTest {
     @Test
     void listApplications_withoutFilters_returnsApplications() {
 
+        createPendingApplication();
+
         RestAssured.given()
                 .when()
                 .get("/api/v1/application")
@@ -119,9 +123,11 @@ class LoanApplicationApiTest extends BaseApiTest {
     @Test
     void listApplications_withDateRange_returnsApplications() {
 
+        createPendingApplication(); // Ensure at least one application exists in the date range
+
         RestAssured.given()
                 .queryParam("from", "2026-08-01T00:00:00Z")
-                .queryParam("to", "2026-08-31T23:59:59Z")
+                .queryParam("to", Instant.now().plusSeconds(3600).toString()) // Future date to ensure the application is included
                 .when()
                 .get("/api/v1/application")
                 .then()
@@ -129,6 +135,19 @@ class LoanApplicationApiTest extends BaseApiTest {
                 .body("size()", greaterThan(0))
                 .body("[0].applicationId", notNullValue())
                 .body("[0].status", equalTo("PENDING"));
+    }
+
+    private String createPendingApplication() {
+
+        return given()
+                .contentType(ContentType.JSON)
+                .body(validLoanApplicationPayload())
+                .when()
+                .post("/api/v1/application")
+                .then()
+                .statusCode(201)
+                .extract()
+                .path("applicationId");
     }
 
     @Test
