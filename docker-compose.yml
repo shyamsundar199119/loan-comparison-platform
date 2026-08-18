@@ -1,0 +1,38 @@
+services:
+
+  postgres:
+    image: postgres:16
+    container_name: loan-comparison-postgres
+    environment:
+      POSTGRES_DB: loan_comparison
+      POSTGRES_USER: loan_user
+      POSTGRES_PASSWORD: loan_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loan_user -d loan_comparison"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: loan-comparison-app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/loan_comparison
+      SPRING_DATASOURCE_USERNAME: loan_user
+      SPRING_DATASOURCE_PASSWORD: loan_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_FLYWAY_ENABLED: true
+
+volumes:
+  postgres_data:
