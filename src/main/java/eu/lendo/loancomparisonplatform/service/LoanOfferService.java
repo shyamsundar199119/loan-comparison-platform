@@ -10,6 +10,7 @@ import eu.lendo.loancomparisonplatform.exception.DuplicateLoanOfferException;
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
 import eu.lendo.loancomparisonplatform.repository.LoanOfferRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import eu.lendo.loancomparisonplatform.domain.LoanApplication;
@@ -22,6 +23,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LoanOfferService {
 
     private final LoanApplicationRepository loanApplicationRepository;
@@ -29,7 +31,7 @@ public class LoanOfferService {
 
     @Transactional
     public LoanOfferResponse createLoanOffer(UUID applicationId, LoanOfferRequest request) {
-
+        log.info("Creating loan offer: applicationId={}, lender={}", applicationId, request.lenderName());
         LoanApplication application = loanApplicationRepository.findById(applicationId).orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
         if (application.getStatus() != ApplicationStatus.PENDING) {
             throw new LoanApplicationStateException("Loan application must be in PENDING status to submit an offer");
@@ -37,6 +39,7 @@ public class LoanOfferService {
 
         boolean lenderAlreadySubmitted = loanOfferRepository.existsByLoanApplicationIdAndLenderName(applicationId, request.lenderName());
         if (lenderAlreadySubmitted) {
+            log.warn("Duplicate loan offer rejected: applicationId={}, lender={}", applicationId, request.lenderName());
             throw new DuplicateLoanOfferException("Lender '%s' has already submitted an offer for this application".formatted(request.lenderName()));
         }
         LoanOffer offer = LoanOffer.builder()
@@ -48,12 +51,14 @@ public class LoanOfferService {
                 .status(OfferStatus.PENDING)
                 .createdAt(Instant.now()).build();
         LoanOffer savedOffer = loanOfferRepository.save(offer);
+        log.info("Loan offer created successfully: applicationId={}, offerId={}, lender={}", applicationId, savedOffer.getId(), savedOffer.getLenderName());
         return mapToResponse(savedOffer);
     }
 
     @Transactional
     public LoanOfferResponse acceptLoanOffer(UUID applicationId, UUID offerId) {
 
+        log.info("Attempting to accept loan offer: applicationId={}, offerId={}", applicationId, offerId);
         LoanApplication application = loanApplicationRepository.findByIdWithLock(applicationId)
                         .orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
 
@@ -62,6 +67,8 @@ public class LoanOfferService {
         validateOfferBelongsToApplication(application, offer);
         validateApplicationCanAcceptOffer(application);
         validateOfferCanBeAccepted(offer);
+
+        log.info("Accepting loan offer: applicationId={}, offerId={}", applicationId, offerId);
 
         // Accept selected offer
         offer.setStatus(OfferStatus.ACCEPTED);
@@ -84,6 +91,8 @@ public class LoanOfferService {
 
     private void validateApplicationCanAcceptOffer(LoanApplication application) {
         if (application.getStatus() != ApplicationStatus.PENDING) {
+            log.warn("Loan offer acceptance rejected because application is not pending: " +
+                            "applicationId={}, status={}", application.getId(), application.getStatus());
             throw new LoanApplicationStateException(
                     "Loan application must be in PENDING status to accept an offer"
             );
@@ -92,6 +101,7 @@ public class LoanOfferService {
 
     private void validateOfferCanBeAccepted(LoanOffer offer) {
         if (offer.getStatus() != OfferStatus.PENDING) {
+            log.warn("Loan offer rejected because offer is not pending: offerId={}, status={}", offer.getId(), offer.getStatus());
             throw new LoanOfferStateException(
                     "Loan offer must be in PENDING status to be accepted"
             );

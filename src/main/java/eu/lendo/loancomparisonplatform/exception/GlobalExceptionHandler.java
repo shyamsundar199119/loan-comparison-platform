@@ -1,10 +1,10 @@
 package eu.lendo.loancomparisonplatform.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -53,6 +54,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(LoanApplicationStateException.class)
     public ResponseEntity<ErrorResponse> handleLoanApplicationStateException(LoanApplicationStateException ex, HttpServletRequest request) {
+        log.warn("Loan application state validation failed: path={}, message={}", request.getRequestURI(), ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.UNPROCESSABLE_ENTITY.value(),
@@ -66,6 +68,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler(LoanOfferStateException.class)
     public ResponseEntity<ErrorResponse> handleLoanOfferStateException(LoanOfferStateException ex, HttpServletRequest request) {
+        log.warn("Loan offer state validation failed: path={}, message={}", request.getRequestURI(), ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.UNPROCESSABLE_ENTITY.value(),
@@ -80,6 +83,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(LoanApplicationNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleLoanApplicationNotFound(LoanApplicationNotFoundException ex, HttpServletRequest request) {
+        log.debug("Loan application not found: path={}, message={}", request.getRequestURI(), ex.getMessage());
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.NOT_FOUND.value(),
@@ -138,6 +142,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DataAccessException.class)
     public ResponseEntity<ErrorResponse> handleDataAccessException(DataAccessException exception, HttpServletRequest request) {
 
+        log.error("Database error while processing request: {} {}", request.getMethod(), request.getRequestURI(), exception);
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
@@ -154,6 +159,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpectedException(Exception ex, HttpServletRequest request) {
+        log.error("Unexpected error while processing request: {} {}", request.getMethod(), request.getRequestURI(), ex);
         ErrorResponse errorResponse = new ErrorResponse(
                 Instant.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),

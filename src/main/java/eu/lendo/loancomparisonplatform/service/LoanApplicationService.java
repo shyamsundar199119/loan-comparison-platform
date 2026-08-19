@@ -10,6 +10,7 @@ import eu.lendo.loancomparisonplatform.exception.LoanApplicationNotFoundExceptio
 import eu.lendo.loancomparisonplatform.repository.LoanApplicationRepository;
 import eu.lendo.loancomparisonplatform.repository.LoanOfferRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LoanApplicationService {
 
     private final LoanApplicationRepository loanApplicationRepository;
@@ -30,6 +32,7 @@ public class LoanApplicationService {
 
     @Transactional
     public LoanApplicationResponse createLoanApplication(LoanApplicationRequest request) {
+        log.info("Creating loan application for applicant email: {}", request.emailId());
         Instant now = Instant.now();
 
         LoanApplication loanApplication = LoanApplication.builder()
@@ -44,6 +47,7 @@ public class LoanApplicationService {
                 .build();
 
         loanApplicationRepository.save(loanApplication);
+        log.info("Loan application created successfully: applicationId={}", loanApplication.getId());
 
         return new LoanApplicationResponse(
                 loanApplication.getId(),
@@ -61,6 +65,7 @@ public class LoanApplicationService {
 
     @Transactional(readOnly = true)
     public LoanApplicationResponse getLoanApplication(UUID applicationId) {
+        log.debug("Fetching loan application: applicationId={}", applicationId);
         LoanApplication loanApplication = loanApplicationRepository.findById(applicationId)
                 .orElseThrow(() -> new LoanApplicationNotFoundException("Loan application not found: " + applicationId));
 
@@ -92,6 +97,7 @@ public class LoanApplicationService {
 
     @Transactional
     public List<LoanApplicationResponse> listLoanApplications(ApplicationStatus status, Instant from, Instant to) {
+        log.debug("Listing loan applications with filters: status={}, from={}, to={}", status, from, to);
         List<LoanApplication> loanApplications = loanApplicationRepository.findAllByFilters(status, from, to);
 
         return loanApplications.stream()

@@ -24,7 +24,7 @@ public class OpenApiConfig {
 
                                 API capabilities include:
                                 - Creating and retrieving loan applications
-                                - Filtering and paginating loan applications
+                                - Filtering loan applications
                                 - Submitting lender loan offers
                                 - Accepting a loan offer
                                 - Managing application and offer lifecycle states
